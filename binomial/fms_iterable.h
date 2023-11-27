@@ -2,8 +2,12 @@
 #pragma once
 #ifdef _DEBUG
 #include <cassert>
+#include <vector>
 #endif // _DEBUG
+#include <algorithm>
 #include <iterator>
+#include <numeric>
+#include <stdexcept>
 
 namespace fms::iterable {
 
@@ -12,18 +16,41 @@ namespace fms::iterable {
 	//
 
 	// Add elements of iterable.
-	template<class I, class T = std::iterator_traits<I>::value_type>
-	constexpr T accumulate(I i, T s = 0.)
+	template<class I>
+	constexpr auto accumulate(I i, auto s = 0) -> decltype(s + *i)
 	{
-		if (i) {
-			s += *i;
-			++i;
+		return std::accumulate(i.begin(), i.end(), s);
+	}
 
-			return accumulate(i, s);
+
+	template<class I, class P>
+	constexpr bool any(I i, P p = [](auto i) { return *i; })
+	{
+		return std::any_of(i.begin(), i.end(), p);
+	}
+	template<class I, class P>
+	constexpr bool all(I i, P p = [](auto i) { return *i; })
+	{
+		return std::all_of(i.begin(), i.end(), p);
+	}
+	template<class I, class P>
+	constexpr bool none(I i, P p = [](auto i) { return *i; })
+	{
+		return std::none_of(i.begin(), i.end(), p);
+	}
+#ifdef _DEBUG
+	inline int logical_test()
+	{
+		{
+			std::vector i{ 1,2,3 };
+			assert(any(i));
+			//assert(all(i));
+			//assert(!none(i));
 		}
 
-		return s;
+		return 0;
 	}
+#endif // _DEBUG
 
 	// Drop at most n elements from iterable.
 	template<class I>
@@ -36,12 +63,25 @@ namespace fms::iterable {
 		return i;
 	}
 
+	// Integral of function f at points in iterable.
+	// integral(f, i, x) = integral(f, i, x) + f(x)
+	template<class F, class I>
+	constexpr auto integral(F f, I i, auto x = 0) -> decltype(f(x))
+	{
+		return i ? (integral(f, ++i, x) + f(x), x = *i) : f(x);
+	}
+
 	// Number of elements in iterable.
 	// size(i, size(j)) = size(i) + (size(j))
 	template<class I>
 	constexpr size_t size(I i, size_t n = 0)
 	{
-		return i ? size(++i, n + 1) : n;
+		while (i) {
+			++i;
+			++n;
+		}
+		
+		return n;
 	}
 
 	// Unsafe iterable from pointer.
@@ -67,7 +107,7 @@ namespace fms::iterable {
 		}
 		constexpr ptr end() const
 		{
-			return ptr(nullptr);
+			throw std::runtime_error(__FUNCTION__ ": unsafe");
 		}
 		
 		constexpr operator bool() const
@@ -121,7 +161,7 @@ namespace fms::iterable {
 		using value_type = T;
 		using reference_type = T&;
 		using pointer = T*;
-		using difference_type = I::difference_type;
+		//using difference_type = I::difference_type;
 
 		constexpr counted(I i, size_t n) noexcept
 			: i(i), n(n)
@@ -187,8 +227,8 @@ namespace fms::iterable {
 				for (auto si : counted(i)) {
 					s += si;
 				}
-				assert(s == accumulate(counted(i)));
-				assert(size(s) == 3);
+				assert(s == accumulate(counted(i), 0));
+				assert(size(counted(i)) == 3);
 			}
 
 			return 0;
