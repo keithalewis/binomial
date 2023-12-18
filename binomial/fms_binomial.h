@@ -63,6 +63,7 @@ namespace fms::binomial {
 			return *this;
 		}
 	};
+	// E[f(V_tau) | V_n = k]
 	template<class F>
 	inline auto E(const std::function<bool(long,long)>& tau, const F& f)
 	{
