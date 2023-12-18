@@ -9,6 +9,7 @@
 #include <numeric>
 #include <stdexcept>
 
+#if 0
 namespace fms::iterable {
 
 	//
@@ -307,3 +308,4 @@ namespace fms::iterable {
 	};
 
 }
+#endif // 0
